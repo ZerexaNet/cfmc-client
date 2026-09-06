@@ -1,0 +1,21 @@
+{
+  "key.cfmc.connect": "Connect to CFMC server",
+  "cfmc.hud.status": "CFMC: %s",
+  "cfmc.hud.ping": "Ping: %s ms",
+  "cfmc.hud.region": "Region: %s",
+  "cfmc.connecting": "Connecting to %s ...",
+  "cfmc.connected": "Connected to CFMC-Edge",
+  "cfmc.auth.failed": "Authentication failed: %s",
+  "cfmc.protocol.mismatch": "Protocol version mismatch, please update the mod",
+  "cfmc.region.full": "Region is full, try again later",
+  "cfmc.disconnected": "Disconnected: %s",
+  "cfmc.reconnecting": "Reconnecting (%d/%d) ...",
+  "cfmc.screen.auth.title": "CFMC Login",
+  "cfmc.screen.auth.username": "Username",
+  "cfmc.screen.auth.password": "Password (skin server, optional)",
+  "cfmc.screen.auth.mode": "Auth mode",
+  "cfmc.screen.auth.connect": "Connect",
+  "cfmc.screen.disconnect.title": "Disconnected",
+  "cfmc.screen.disconnect.reason": "Reason: %s",
+  "cfmc.screen.disconnect.reconnect": "Reconnect"
+}

@@ -1,0 +1,53 @@
+// ============================================================================
+// CFMC Client — 构建脚本 (Fabric Loom)
+//
+// 设计说明:
+//   - Loom 负责反编译/重映射 Minecraft, 开发运行用 `gradle runClient`
+//   - Java-WebSocket 是唯一外部依赖: 轻量 (~70KB), 无传递依赖,
+//     与服务端 WS 协议无耦合 (我们自己做二进制编解码)
+//   - Gson 由 Minecraft 自带, 无需显式引入 (皮肤站 JSON 解析用)
+// ============================================================================
+
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'java'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base { archivesName = project.archives_base_name }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Minecraft + Fabric 映射链
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // WebSocket 客户端 (替代原版 TCP 网络层的底层通道)
+    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
+    include 'org.java-websocket:Java-WebSocket:1.5.6' // include = 打进 mod jar
+}
+
+processResources {
+    // fabric.mod.json 里的 ${version} 占位符
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 17
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
