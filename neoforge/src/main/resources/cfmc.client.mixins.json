@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.cfmc.neoforge.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ConnectionMixin",
+    "MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

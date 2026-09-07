@@ -1,0 +1,60 @@
+# ============================================================================
+# CFMC Client — 全版本矩阵构建
+# 策略: fabric × 5 版本 + neoforge × 4 版本, 每个 (loader, mc) 组合一个 job。
+# 新增版本: gradle.properties 的 supported_versions + versions.gradle 加行 → CI 自动跟进。
+# ============================================================================
+
+name: build-matrix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # 某个版本失败不影响其他版本产物
+      matrix:
+        include:
+          # ---- Fabric: 全版本 ----
+          - { loader: fabric,   mc: 1.20.1 }
+          - { loader: fabric,   mc: 1.20.4 }
+          - { loader: fabric,   mc: 1.20.6 }
+          - { loader: fabric,   mc: 1.21.1 }
+          - { loader: fabric,   mc: 1.21.4 }
+          # ---- NeoForge: 1.20.2+ ----
+          - { loader: neoforge, mc: 1.20.4 }
+          - { loader: neoforge, mc: 1.20.6 }
+          - { loader: neoforge, mc: 1.21.1 }
+          - { loader: neoforge, mc: 1.21.4 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21' # 最高要求; 1.20.4 及以下的 17 编译由 Gradle 工具链自动解析
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build ${{ matrix.loader }} @ MC ${{ matrix.mc }}
+        run: |
+          gradle :${{ matrix.loader }}:build \
+                 -Pmc_version=${{ matrix.mc }} \
+                 --no-daemon --stacktrace
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfmc-${{ matrix.loader }}-${{ matrix.mc }}
+          path: |
+            ${{ matrix.loader }}/build/libs/*.jar
+            !${{ matrix.loader }}/build/libs/*-sources.jar
+          if-no-files-found: error

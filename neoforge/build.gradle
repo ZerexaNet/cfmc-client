@@ -1,0 +1,56 @@
+// ============================================================================
+// neoforge — NeoForge 适配层 (Mojang 官方映射; 随 mc_version 构建)
+// ============================================================================
+// 使用 ModDevGradle (NeoForge 官方推荐插件)。1.20.1 无 NeoForge,
+// 若 mc_version 指向无 NeoForge 的版本, 本模块构建会被跳过。
+
+plugins {
+    id 'net.neoforged.moddev' version '1.0.21'
+}
+
+def table = rootProject.ext.versionsTable
+def mc = project.mc_version
+def v = table[mc]
+if (v == null) throw new GradleException("versions.gradle 缺少 ${mc} 条目")
+if (v.neoforge == null) {
+    // 1.20.1 等: 无 NeoForge → 跳过任务而不是报错 (CI 会只建 fabric)
+    logger.lifecycle("MC ${mc} 无 NeoForge 版本, 跳过 :neoforge 构建")
+    tasks.named('build') { enabled = false }
+}
+
+neoForge {
+    version = v.neoforge ?: '20.4.237'
+
+    runs {
+        client { client() }
+    }
+
+    mods {
+        cfmcclient {
+            sourceSet sourceSets.main
+            sourceSet project(':common').sourceSets.main  // common 一起进运行时
+        }
+    }
+}
+
+dependencies {
+    implementation project(':common')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = v.java
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+java.toolchain.languageVersion = JavaLanguageVersion.of(v.java)
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand 'version': project.version
+    }
+}

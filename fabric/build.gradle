@@ -1,0 +1,47 @@
+// ============================================================================
+// fabric — Fabric 适配层 (yarn 映射; 随 gradle.properties 的 mc_version 构建)
+// ============================================================================
+// 版本相关代码只允许出现在本模块: Mixin 目标 / UI / 键位 / 平台注入。
+// common 的零 MC 依赖承诺靠这里的"薄胶水"维持。
+
+plugins {
+    id 'fabric-loom' version '1.9-SNAPSHOT'
+}
+
+def table = rootProject.ext.versionsTable
+def mc = project.mc_version
+def v = table[mc]
+if (v == null) throw new GradleException("versions.gradle 缺少 ${mc} 条目")
+
+java {
+    // 1.20.5+ 需要更高编译级别 (官方模板要求), 其余 17
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+java.toolchain.languageVersion = JavaLanguageVersion.of(v.java)
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mc}"
+    mappings "net.fabricmc:yarn:${v.yarn}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${v.fabricLoader}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabricApi}"
+
+    // common 核心 (namedElements = loom 重映射后的产物; include = 打进 jar)
+    implementation project(path: ':common', configuration: 'namedElements')
+    include project(':common')
+    include 'org.java-websocket:Java-WebSocket:1.5.6'
+
+    // common 编译期用 compileOnly gson, fabric 侧由 MC 自带, 无需处理
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = v.java
+}

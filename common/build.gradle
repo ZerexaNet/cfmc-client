@@ -1,0 +1,33 @@
+// ============================================================================
+// common — 纯 Java 核心模块 (全版本支持的地基)
+// ============================================================================
+// 零 Minecraft 依赖! 协议编解码 / WebSocket 传输 / 认证 / 区块解码全在这里。
+// 恒定 Java 17 字节码 → 一份 core jar 被 1.20.1 ~ 1.21.x 所有版本共享
+// (1.20.5+ 运行在 JDK21 上完全兼容 17 字节码)。
+// 铁律: 本模块禁止 import net.minecraft.* / net.fabricmc.* / net.neoforged.*
+
+plugins {
+    id 'java-library'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// CI 上需要 Java 17 编译 (矩阵默认装 21 时自动找 17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+dependencies {
+    // WebSocket 客户端 (唯一外部依赖, 会被 fabric include 进 mod jar)
+    api 'org.java-websocket:Java-WebSocket:1.5.6'
+    // Gson: 运行时由 Minecraft 自带; common 单独编译期需要它 (皮肤站 JSON)
+    compileOnly 'com.google.code.gson:gson:2.10.1'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}

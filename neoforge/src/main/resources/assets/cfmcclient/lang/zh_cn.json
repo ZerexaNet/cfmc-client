@@ -1,0 +1,21 @@
+{
+  "key.cfmc.connect": "连接 CFMC 服务器",
+  "cfmc.hud.status": "CFMC: %s",
+  "cfmc.hud.ping": "延迟: %s ms",
+  "cfmc.hud.region": "区域: %s",
+  "cfmc.connecting": "正在连接 %s ...",
+  "cfmc.connected": "已连接到 CFMC-Edge",
+  "cfmc.auth.failed": "认证失败: %s",
+  "cfmc.protocol.mismatch": "协议版本不匹配, 请更新 Mod",
+  "cfmc.region.full": "该区域人数已满, 请稍后再试",
+  "cfmc.disconnected": "与服务器断开: %s",
+  "cfmc.reconnecting": "正在尝试重连 (%d/%d) ...",
+  "cfmc.screen.auth.title": "CFMC 登录",
+  "cfmc.screen.auth.username": "用户名",
+  "cfmc.screen.auth.password": "密码 (皮肤站, 可留空)",
+  "cfmc.screen.auth.mode": "认证模式",
+  "cfmc.screen.auth.connect": "连接",
+  "cfmc.screen.disconnect.title": "连接已断开",
+  "cfmc.screen.disconnect.reason": "原因: %s",
+  "cfmc.screen.disconnect.reconnect": "重新连接"
+}

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.cfmc.fabric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ClientConnectionMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "MinecraftClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

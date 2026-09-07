@@ -1,53 +1,37 @@
 // ============================================================================
-// CFMC Client — 构建脚本 (Fabric Loom)
-//
-// 设计说明:
-//   - Loom 负责反编译/重映射 Minecraft, 开发运行用 `gradle runClient`
-//   - Java-WebSocket 是唯一外部依赖: 轻量 (~70KB), 无传递依赖,
-//     与服务端 WS 协议无耦合 (我们自己做二进制编解码)
-//   - Gson 由 Minecraft 自带, 无需显式引入 (皮肤站 JSON 解析用)
+// CFMC Client — 根构建脚本 (全版本支持: 版本矩阵)
 // ============================================================================
+// 三个模块:
+//   common/   纯 Java 核心 (协议/网络/认证/区块解码) — 零 MC 依赖, 恒定 Java 17
+//   fabric/   Fabric 适配层 (yarn 映射)              — 随 mc_version 逐版本构建
+//   neoforge/ NeoForge 适配层 (Mojang 官方映射)      — 随 mc_version 逐版本构建
+//
+// 切换目标版本:  gradle build -Pmc_version=1.21.4
+// 全矩阵构建:   scripts/build-all.sh  (或 CI 的版本矩阵 job)
+apply from: 'versions.gradle'
 
-plugins {
-    id 'fabric-loom' version '1.6-SNAPSHOT'
-    id 'java'
-}
+subprojects {
+    apply plugin: 'java'
 
-version = project.mod_version
-group = project.maven_group
+    group = project.maven_group
+    version = project.mod_version
 
-base { archivesName = project.archives_base_name }
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Minecraft + Fabric 映射链
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    // WebSocket 客户端 (替代原版 TCP 网络层的底层通道)
-    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
-    include 'org.java-websocket:Java-WebSocket:1.5.6' // include = 打进 mod jar
-}
-
-processResources {
-    // fabric.mod.json 里的 ${version} 占位符
-    inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
-        expand 'version': project.version
+    repositories {
+        mavenCentral()
     }
-}
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = 'UTF-8'
-    it.options.release = 17
-}
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        // 构建 jar 名带 MC 版本: cfmc-client-fabric-1.20.4-0.2.0.jar
+        // (fabric/neoforge 模块内覆写 archivesName, 此处统一设版本后缀)
+    }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    // 产物命名: <loader>-<mc_version>-<mod_version>
+    def mc = project.findProperty('mc_version') ?: '1.20.4'
+    afterEvaluate {
+        def loaderName = project.name == 'common' ? 'core' : project.name
+        base {
+            archivesName = "${project.archives_base_name}-${loaderName}-${mc}"
+        }
+    }
 }

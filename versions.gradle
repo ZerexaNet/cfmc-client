@@ -1,0 +1,45 @@
+// ============================================================================
+// versions.gradle — MC 版本矩阵表 (全版本支持的"唯一加行点")
+// ============================================================================
+// 加新 MC 版本 = 在 versionsTable 加一行, 然后把版本号加进
+// gradle.properties 的 supported_versions —— 服务端/协议/公共层零改动。
+//
+// 字段说明:
+//   yarn        Fabric 的 yarn 映射版本
+//   fabricLoader fabric-loader 版本 (1.20.5+ 建议 0.16+)
+//   fabricApi   Fabric API 版本
+//   neoforge    NeoForge 版本 (null = 该版本无 NeoForge, 如 1.20.1 只有 Forge)
+//   java        该版本 MC 需要的 JDK 大版本 (1.20.4 及以下=17, 1.20.5+=21)
+ext {
+    versionsTable = [
+        '1.20.1': [
+            yarn: '1.20.1+build.10', fabricLoader: '0.15.11',
+            fabricApi: '0.92.2+1.20.1', neoforge: null, java: 17,
+        ],
+        '1.20.4': [
+            yarn: '1.20.4+build.3', fabricLoader: '0.15.11',
+            fabricApi: '0.97.2+1.20.4', neoforge: '20.4.237', java: 17,
+        ],
+        '1.20.6': [
+            yarn: '1.20.6+build.3', fabricLoader: '0.16.9',
+            fabricApi: '0.100.8+1.20.6', neoforge: '20.6.135', java: 21,
+        ],
+        '1.21.1': [
+            yarn: '1.21.1+build.3', fabricLoader: '0.16.9',
+            fabricApi: '0.115.1+1.21.1', neoforge: '21.1.95', java: 21,
+        ],
+        '1.21.4': [
+            yarn: '1.21.4+build.8', fabricLoader: '0.16.9',
+            fabricApi: '0.119.2+1.21.4', neoforge: '21.4.147', java: 21,
+        ],
+    ]
+}
+
+// 校验 mc_version 合法性 (拼错立刻失败, 而不是在子项目深处报神秘 NPE)
+def target = project.findProperty('mc_version') ?: '1.20.4'
+if (!ext.versionsTable.containsKey(target)) {
+    throw new GradleException(
+        "未知 MC 版本: ${target}\n可选: ${ext.versionsTable.keySet().join(', ')}\n" +
+        "新版本请在 versions.gradle 的 versionsTable 加一行")
+}
+logger.lifecycle("CFMC 构建目标: MC ${target} (Java ${ext.versionsTable[target].java})")

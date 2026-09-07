@@ -1,9 +1,23 @@
-# Gradle / IDE
+# Gradle
 .gradle/
 build/
-out/
+*/build/
+dist/
+
+# IDE
 .idea/
 *.iml
 .vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# Fabric/MC 开发运行时
 run/
+runs/
 remappedSrc/
+
+# 系统文件
+.DS_Store
+Thumbs.db

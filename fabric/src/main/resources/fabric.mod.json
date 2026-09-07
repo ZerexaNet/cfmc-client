@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "cfmcclient",
+  "version": "${version}",
+  "name": "CFMC Client",
+  "description": "Cloudflare Minecraft Edge Server Client Mod — WebSocket 传输 + 自定义二进制协议 + 多模式认证 + 全版本支持 (1.20.x/1.21.x)",
+  "authors": ["ZerexaNet"],
+  "contact": {
+    "homepage": "https://github.com/ZerexaNet/cfmc-client",
+    "sources": "https://github.com/ZerexaNet/cfmc-client"
+  },
+  "license": "Apache-2.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.cfmc.fabric.CFMCFabricClient::init"
+    ]
+  },
+  "mixins": [
+    "cfmc.client.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20 || ~1.21",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "recommends": {
+    "sodium": "*"
+  },
+  "custom": {
+    "cfmc:config": {
+      "defaultServerAddress": "ws://localhost:8787",
+      "authMode": "hybrid",
+      "skinServerUrl": "https://ely.by",
+      "enableDebugOverlay": true,
+      "autoReconnect": true,
+      "reconnectDelayMs": 5000,
+      "maxReconnectAttempts": 3
+    }
+  }
+}
