@@ -37,23 +37,23 @@ Cloudflare Minecraft Edge Server 的客户端 Mod —— **全版本支持**：�
 
 ¹ 1.20.1 无 NeoForge（该版本只有 Forge，可按同模式扩展 forge/ 模块）
 
-CI（`.github/workflows/build.yml`）对上表每个组合独立构建，产物按 `cfmc-client-<loader>-<mc>-<version>.jar` 命名。
+CI（`.github/workflows/build.yml`）对上表每个组合独立构建，产物按 `cfmc-client-<loader>-<mc>-<version>.jar` 命名，详见下方[自动打包与发布](#自动打包与发布github-actions)。
 
 ## 快速开始
 
 ```bash
-# 构建（默认 1.20.4）
-gradle :fabric:build
+# 构建（默认 1.20.4；仓库自带 Gradle Wrapper，无需本机安装 Gradle）
+./gradlew :fabric:build
 
 # 指定版本构建
-gradle :fabric:build -Pmc_version=1.21.4
-gradle :neoforge:build -Pmc_version=1.21.1
+./gradlew :fabric:build -Pmc_version=1.21.4
+./gradlew :neoforge:build -Pmc_version=1.21.1
 
 # 全版本矩阵构建（产物在 dist/）
 ./scripts/build-all.sh
 
 # 本地运行调试
-gradle :fabric:runClient -Pmc_version=1.20.4
+./gradlew :fabric:runClient -Pmc_version=1.20.4
 ```
 
 **加一个新 MC 版本只需两步**：
@@ -62,6 +62,29 @@ gradle :fabric:runClient -Pmc_version=1.20.4
 2. `gradle.properties` 的 `supported_versions` 追加版本号
 
 服务端、协议、common 全部零改动。
+
+## 自动打包与发布（GitHub Actions）
+
+仓库自带 Gradle Wrapper（8.10.2）与完整 CI（`.github/workflows/build.yml`），**本地不装任何环境也能出全版本包**：
+
+| 触发方式 | 行为 |
+|----------|------|
+| push 到 `main` | 9 组合矩阵构建，jar 上传为 Actions Artifacts（按 `cfmc-<loader>-<mc>` 命名） |
+| 提交 Pull Request | 同上，作为合入前回归校验；单版本失败不影响其余版本产物 |
+| push tag `v*`（如 `v0.2.1`） | 矩阵构建 → 汇总全部 jar → 生成 `SHA256SUMS.txt` → **自动创建 GitHub Release** |
+
+**发版流程**（维护者）：
+
+```bash
+# 1. 更新版本号：gradle.properties → mod_version=0.2.1
+git commit -am "release: v0.2.1"
+
+# 2. 打 tag 并推送 → CI 自动构建并发布 Release
+git tag v0.2.1
+git push origin main --tags
+```
+
+发布完成后在仓库 **Releases** 页下载对应版本 jar，`SHA256SUMS.txt` 用于完整性校验；每个组合的产物清单会显示在 Actions 运行页顶部的构建摘要中。新增 MC 版本后同步在 workflow 的 `matrix.include` 加一行即可纳入打包矩阵。
 
 ## 目录结构
 

@@ -5,7 +5,8 @@
 // common 的零 MC 依赖承诺靠这里的"薄胶水"维持。
 
 plugins {
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    // 固定发布版 (勿用 -SNAPSHOT): CI 构建需要可复现, SNAPSHOT 会漂移
+    id 'fabric-loom' version '1.9.2'
 }
 
 def table = rootProject.ext.versionsTable
