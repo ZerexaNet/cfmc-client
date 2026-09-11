@@ -28,8 +28,9 @@ import java.nio.file.Path;
  * 代码使用 Mojang 官方映射名 (NeoForge 规范), 与 Fabric 侧的 yarn 名不同,
  * 但 common 层完全一致 —— 这就是"全版本一份核心"的意义。
  *
- * 版本矩阵: 本源码集只使用 1.20.4~1.21.x 全系稳定的 API:
- *   - @Mod 无参构造 + FMLJavaModLoadingContext.get().getModEventBus()
+ * 版本矩阵: 本源码集只使用 1.20.6~1.21.x 全系稳定的 API:
+ *   - @Mod 构造注入 (IEventBus, ModContainer) — NeoForge 20.4+ 官方模式,
+ *     替代已在 21.x 移除的 FMLJavaModLoadingContext
  *   - KeyMapping / RegisterKeyMappingsEvent (跨版本稳定)
  *   - tick 驱动与 HUD 不走 NeoForge 事件 (两版本签名不同) —— 走 Mixin!
  *     见 mixin/MinecraftMixin (Minecraft#tick 尾部注入, 跨版本稳定)
@@ -51,13 +52,13 @@ public class CFMCNeoForgeClient {
         @Override public Path configDir() { return net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get(); }
     }
 
-    public CFMCNeoForgeClient() {
+    public CFMCNeoForgeClient(IEventBus modEventBus, ModContainer modContainer) {
         // ---- 1. 平台注入必须最先 (配置/握手/版本注册表都依赖它) ----
         CFMCPlatformHolder.set(new NeoForgePlatform());
 
-        IEventBus modBus = net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.addListener(this::onClientSetup);
-        modBus.addListener(this::onRegisterKeys);
+        // 构造注入 (NeoForge 20.4+ 官方模式; FMLJavaModLoadingContext 已在 21.x 移除)
+        modEventBus.addListener(this::onClientSetup);
+        modEventBus.addListener(this::onRegisterKeys);
     }
 
     private void onRegisterKeys(RegisterKeyMappingsEvent event) {

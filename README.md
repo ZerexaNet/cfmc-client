@@ -33,9 +33,10 @@ Cloudflare Minecraft Edge Server 的客户端 Mod —— **全版本支持**：�
 | 加载器 | 1.20.1 | 1.20.4 | 1.20.6 | 1.21.1 | 1.21.4 |
 |--------|:------:|:------:|:------:|:------:|:------:|
 | Fabric | ✅ | ✅ | ✅ | ✅ | ✅ |
-| NeoForge | —¹ | ✅ | ✅ | ✅ | ✅ |
+| NeoForge | —¹ | —² | ✅ | ✅ | ✅ |
 
 ¹ 1.20.1 无 NeoForge（该版本只有 Forge，可按同模式扩展 forge/ 模块）
+² ModDevGradle 插件仅支持 NeoForge 20.6+，1.20.4 无 NeoForge 构建
 
 CI（`.github/workflows/build.yml`）对上表每个组合独立构建，产物按 `cfmc-client-<loader>-<mc>-<version>.jar` 命名，详见下方[自动打包与发布](#自动打包与发布github-actions)。
 
@@ -69,7 +70,7 @@ CI（`.github/workflows/build.yml`）对上表每个组合独立构建，产物�
 
 | 触发方式 | 行为 |
 |----------|------|
-| push 到 `main` | 9 组合矩阵构建，jar 上传为 Actions Artifacts（按 `cfmc-<loader>-<mc>` 命名） |
+| push 到 `main` | 8 组合矩阵构建，jar 上传为 Actions Artifacts（按 `cfmc-<loader>-<mc>` 命名） |
 | 提交 Pull Request | 同上，作为合入前回归校验；单版本失败不影响其余版本产物 |
 | push tag `v*`（如 `v0.2.1`） | 矩阵构建 → 汇总全部 jar → 生成 `SHA256SUMS.txt` → **自动创建 GitHub Release** |
 

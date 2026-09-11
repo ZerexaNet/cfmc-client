@@ -18,7 +18,8 @@ ext {
         ],
         '1.20.4': [
             yarn: '1.20.4+build.3', fabricLoader: '0.15.11',
-            fabricApi: '0.97.2+1.20.4', neoforge: '20.4.237', java: 17,
+            // neoforge: null — ModDevGradle 只支持 NeoForge 20.6+, 1.20.4 无 NeoForge 构建
+            fabricApi: '0.97.2+1.20.4', neoforge: null, java: 17,
         ],
         '1.20.6': [
             yarn: '1.20.6+build.3', fabricLoader: '0.16.9',

@@ -27,8 +27,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${v.fabricLoader}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabricApi}"
 
-    // common 核心 (namedElements = loom 重映射后的产物; include = 打进 jar)
-    implementation project(path: ':common', configuration: 'namedElements')
+    // common 核心 (纯 java 模块, 无 loom/namedElements — 直接用默认 jar 产物;
+    // common 零 MC 依赖, 不需要 loom 重映射)
+    implementation project(':common')
     include project(':common')
     include 'org.java-websocket:Java-WebSocket:1.5.6'
 
