@@ -1,6 +1,6 @@
 package com.cfmc.fabric.mixin;
 
-import com.cfmc.fabric.CFMCClientMod;
+import com.cfmc.fabric.CFMCFabricClient;
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,6 +18,6 @@ public abstract class MinecraftClientMixin {
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void onTick(CallbackInfo ci) {
-        CFMCClientMod.onClientTick((MinecraftClient) (Object) this);
+        CFMCFabricClient.onClientTick((MinecraftClient) (Object) this);
     }
 }

@@ -2,7 +2,8 @@ package com.cfmc.fabric.render;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.HudRenderCallback;
+// HudRenderCallback 是 Fabric API 的类 (不在 net.minecraft 包)
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 import java.awt.Color;
 

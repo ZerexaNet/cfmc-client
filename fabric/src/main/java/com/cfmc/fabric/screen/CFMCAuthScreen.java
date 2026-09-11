@@ -1,6 +1,7 @@
 package com.cfmc.fabric.screen;
 
 import com.cfmc.common.config.CFMCConfig;
+import com.cfmc.common.auth.CFMCAuthService;
 import com.cfmc.common.auth.impl.HybridAuthStrategy;
 import com.cfmc.common.auth.impl.OfflineAuthStrategy;
 import com.cfmc.common.auth.impl.SkinServerAuthStrategy;

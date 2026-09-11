@@ -26,9 +26,9 @@ import java.net.InetSocketAddress;
 @Mixin(ClientConnection.class)
 public abstract class ClientConnectionMixin {
 
-    @Inject(method = "connect(Ljava/net/InetSocketAddress;Z)Lnet/minecraft/network/ClientConnection;",
+    @Inject(method = "connect(Ljava/net/InetSocketAddress;ZLnet/minecraft/network/ClientConnection;)Lnet/minecraft/network/ClientConnection;",
             at = @At("HEAD"), cancellable = true)
-    private static void onConnect(InetSocketAddress address, boolean useEpoll, CallbackInfo ci) {
+    private static void onConnect(InetSocketAddress address, boolean useEpoll, ClientConnection connection, CallbackInfo ci) {
         if (CFMCNetworkManager.getInstance().isActive()) {
             ci.cancel(); // 已处于 CFMC 会话中, 不再走原版连接
         }
