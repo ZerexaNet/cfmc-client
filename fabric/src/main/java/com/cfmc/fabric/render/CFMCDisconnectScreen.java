@@ -21,14 +21,14 @@ public class CFMCDisconnectScreen extends Screen {
 
     @Override
     protected void init() {
-        // 重连按钮 (居中)
+        // 重连按钮 (居中) — builder 链以 .build() 收尾后整体作为 addDrawableChild 实参
         addDrawableChild(ButtonWidget.builder(Text.literal("重新连接"), b -> {
                     com.cfmc.common.network.CFMCNetworkManager.getInstance()
                             .connect(serverUrl, null); // TODO: 复用认证结果
                     close();
-                }))
+                })
                 .dimensions(this.width / 2 - 100, this.height / 2 + 20, 200, 20)
-                .build();
+                .build());
     }
 
     @Override
