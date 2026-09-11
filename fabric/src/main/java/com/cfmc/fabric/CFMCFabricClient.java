@@ -59,7 +59,8 @@ public class CFMCFabricClient {
         CFMCConfig.get().load();
 
         // ---- 3. HUD 覆盖层 ----
-        HudRenderCallback.EVENT.register(new CFMCHudOverlay());
+        // 版本兼容注册: 1.20.x 与 1.21.x 的 HudRenderCallback 方法签名不同 (见该类注释)
+        CFMCHudOverlay.register();
 
         // ---- 4. 快捷键: P = 打开 CFMC 登录界面 ----
         connectKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(

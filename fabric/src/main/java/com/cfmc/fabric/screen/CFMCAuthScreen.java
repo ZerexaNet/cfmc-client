@@ -98,7 +98,8 @@ public class CFMCAuthScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // 版本中立背景 (renderBackground 签名 1.20.1 与 1.20.2+ 不同, 自绘半透明底色)
+        context.fill(0, 0, this.width, this.height, 0xC0101010);
         context.drawCenteredTextWithShadow(this.textRenderer, this.title,
                 this.width / 2, this.height / 2 - 70, 0xFFFFFF);
         context.drawTextWithShadow(this.textRenderer, "用户名:", this.width / 2 - 100, this.height / 2 - 52, 0xA0A0A0);

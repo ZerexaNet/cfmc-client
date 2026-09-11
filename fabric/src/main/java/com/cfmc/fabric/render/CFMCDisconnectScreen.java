@@ -33,7 +33,8 @@ public class CFMCDisconnectScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // 版本中立背景 (renderBackground 签名 1.20.1 与 1.20.2+ 不同, 自绘半透明底色)
+        context.fill(0, 0, this.width, this.height, 0xC0101010);
         context.drawCenteredTextWithShadow(this.textRenderer, this.title,
                 this.width / 2, this.height / 2 - 30, 0xFF5555);
         context.drawCenteredTextWithShadow(this.textRenderer, "原因: " + reason,
