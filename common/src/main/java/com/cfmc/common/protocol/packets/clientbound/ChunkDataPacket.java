@@ -1,5 +1,7 @@
 package com.cfmc.common.protocol.packets.clientbound;
 
+import com.cfmc.common.platform.CFMCWorldBridge;
+import com.cfmc.common.platform.CFMCWorldBridgeHolder;
 import com.cfmc.common.world.CFMCChunkLoader;
 import com.cfmc.common.util.CFMCConstants;
 import com.cfmc.common.protocol.CFMCPacket;
@@ -61,7 +63,10 @@ public class ChunkDataPacket extends CFMCPacket {
 
     @Override
     public void handle() {
-        // TODO(Phase 2): 灌入客户端世界 (替换 Mixin 拦截到的原生 ChunkData 流程)
+        // 内存缓存 (CFMCChunkLoader.getBlock 查询用; 不打日志 — 流式下发时量太大)
         CFMCChunkLoader.getInstance().handleChunkData(this);
+        // [Phase 2] 灌入客户端世界渲染 (loader 层实现; IO 线程调用, 实现方自行切主线程)
+        CFMCWorldBridge wb = CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onChunkData(chunkX, chunkZ, fullChunk, sections);
     }
 }

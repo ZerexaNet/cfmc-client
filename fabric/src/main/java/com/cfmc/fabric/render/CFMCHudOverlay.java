@@ -45,7 +45,8 @@ public class CFMCHudOverlay {
 
         var textRenderer = client.textRenderer;
         String line = "CFMC [" + state + "] 区域 "
-                + com.cfmc.common.network.CFMCNetworkManager.getInstance().getCurrentRegion();
+                + com.cfmc.common.network.CFMCNetworkManager.getInstance().getCurrentRegion()
+                + " · 已同步 " + com.cfmc.fabric.world.CFMCWorldInjector.syncedChunks() + " 区块";
 
         int x = 4;
         int y = 4;

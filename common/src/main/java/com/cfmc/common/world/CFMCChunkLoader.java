@@ -65,12 +65,10 @@ public final class CFMCChunkLoader {
         return new CesiumSection(sectionY, palette, indices, blockCount);
     }
 
-    /** ChunkData 包处理入口 */
+    /** ChunkData 包处理入口 (只缓存; 渲染灌入由 loader 层经 CFMCWorldBridge 完成) */
     public void handleChunkData(ChunkDataPacket packet) {
         String key = packet.chunkX + "," + packet.chunkZ;
         loadedChunks.put(key, packet.sections);
-        CFMCLogger.info("区块 (" + key + ") 已加载: " + packet.sections.size() + " 个非空 Section");
-        // TODO(Phase 2): 通知渲染层重建该区块 mesh
     }
 
     /** 查询任意世界坐标的方块名 (跨区块; 未加载返回 air) */

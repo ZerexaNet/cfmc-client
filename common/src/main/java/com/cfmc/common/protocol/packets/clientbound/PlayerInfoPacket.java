@@ -1,5 +1,7 @@
 package com.cfmc.common.protocol.packets.clientbound;
 
+import com.cfmc.common.platform.CFMCWorldBridge;
+import com.cfmc.common.platform.CFMCWorldBridgeHolder;
 import com.cfmc.common.util.CFMCConstants;
 import com.cfmc.common.protocol.CFMCPacket;
 import com.cfmc.common.protocol.PacketReader;
@@ -33,6 +35,8 @@ public class PlayerInfoPacket extends CFMCPacket {
 
     @Override
     public void handle() {
-        // TODO(Phase 2): 更新 Tab 列表 / 生成或销毁玩家实体
+        // [Phase 2] loader 层提示玩家进出 (Tab 列表/玩家实体渲染留待后续阶段)
+        CFMCWorldBridge wb = CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onPlayerInfo(action, name);
     }
 }

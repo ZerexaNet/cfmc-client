@@ -1,5 +1,7 @@
 package com.cfmc.common.protocol.packets.clientbound;
 
+import com.cfmc.common.platform.CFMCWorldBridge;
+import com.cfmc.common.platform.CFMCWorldBridgeHolder;
 import com.cfmc.common.util.CFMCConstants;
 import com.cfmc.common.protocol.CFMCPacket;
 import com.cfmc.common.protocol.PacketReader;
@@ -31,7 +33,8 @@ public class BlockUpdatePacket extends CFMCPacket {
 
     @Override
     public void handle() {
-        // TODO(Phase 2): 更新客户端世界缓存中的单个方块并重渲染该区块段
-        // (loader 层 Mixin/Hook 拦截: blockName → 本版本 BlockState)
+        // [Phase 2] loader 层把 blockName 解析成本版本 BlockState 并重渲染该区块段
+        CFMCWorldBridge wb = CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onBlockUpdate(x, y, z, blockName);
     }
 }

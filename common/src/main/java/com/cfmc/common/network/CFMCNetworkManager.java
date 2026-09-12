@@ -56,6 +56,9 @@ public final class CFMCNetworkManager {
     private CFMCWebSocketClient websocket;
     private final AtomicBoolean connecting = new AtomicBoolean(false);
 
+    /** 服务端 Disconnect 包已提示标记 (防 onClose 二次通知; connect 时复位) */
+    private volatile boolean serverDisconnectNotified = false;
+
     /** 当前认证结果 (重连复用) */
     private AuthResult lastAuth;
 
@@ -81,6 +84,7 @@ public final class CFMCNetworkManager {
             }
 
             state = State.CONNECTING;
+            serverDisconnectNotified = false;
             CFMCLogger.info("连接 " + uri);
 
             websocket = new CFMCWebSocketClient(uri, headers, this);
@@ -189,6 +193,14 @@ public final class CFMCNetworkManager {
         connecting.set(false);
         CFMCHeartbeatManager.getInstance().stop();
 
+        // [Phase 2] 异常关闭通知 loader 层 (服务端 Disconnect 包路径已提示过的不再重复)
+        boolean cleanLocal = code == 1000 && !remote;
+        if (!serverDisconnectNotified && !cleanLocal) {
+            com.cfmc.common.platform.CFMCWorldBridge wb =
+                    com.cfmc.common.platform.CFMCWorldBridgeHolder.get();
+            if (wb != null) wb.onConnectionClosed(code, reason, remote);
+        }
+
         // 自动重连 (配置开启且非主动断开)
         if (CFMCConfig.get().autoReconnect && remote) {
             CFMCReconnectHandler.getInstance().scheduleReconnect();
@@ -218,9 +230,12 @@ public final class CFMCNetworkManager {
     public void onChunkReceived(ChunkDataPacket packet) { /* 由 ChunkLoader 内部处理 */ }
 
     public void onServerDisconnect(String reason) {
+        serverDisconnectNotified = true;
         CFMCLogger.warn("服务端断开: " + reason);
         disconnect();
-        // TODO(Phase 2): 展示 CFMCDisconnectScreen(reason)
+        // [Phase 2] 断开展示移交 loader 层 (聊天提示 / CFMCDisconnectScreen)
+        com.cfmc.common.platform.CFMCWorldBridge wb = com.cfmc.common.platform.CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onServerDisconnected(reason);
     }
 
     public void onServerKeepAlive() {

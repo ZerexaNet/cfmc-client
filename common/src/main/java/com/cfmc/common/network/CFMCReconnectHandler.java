@@ -34,6 +34,11 @@ public final class CFMCReconnectHandler {
         lastServerUrl = serverUrl;
     }
 
+    /** 最近一次连接的地址 (断线界面"重新连接"用; 可能为 null) */
+    public String lastUrl() {
+        return lastServerUrl;
+    }
+
     /** 调度一次重连尝试 */
     public synchronized void scheduleReconnect() {
         if (lastServerUrl == null) return;

@@ -9,6 +9,7 @@ import com.cfmc.common.util.CFMCLogger;
 import com.cfmc.common.version.CFMCVersionRegistry;
 import com.cfmc.fabric.render.CFMCHudOverlay;
 import com.cfmc.fabric.screen.CFMCAuthScreen;
+import com.cfmc.fabric.world.CFMCWorldInjector;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -62,6 +63,10 @@ public class CFMCFabricClient {
         // 版本兼容注册: 1.20.x 与 1.21.x 的 HudRenderCallback 方法签名不同 (见该类注释)
         CFMCHudOverlay.register();
 
+        // ---- 3.5 世界注入桥 [Phase 2 核心] ----
+        // 服务端区块/方块/JoinGame → 灌入客户端世界 (传送 + 地形覆盖 + 实时方块)
+        CFMCWorldInjector.register();
+
         // ---- 4. 快捷键: P = 打开 CFMC 登录界面 ----
         connectKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.cfmc.connect",
@@ -70,13 +75,14 @@ public class CFMCFabricClient {
                 "category.cfmc.main"
         ));
 
-        // ---- 5. 客户端 tick: 快捷键处理 + 位置上报 ----
+        // ---- 5. 客户端 tick: 快捷键处理 + 服务器区块灌入 + 位置上报 ----
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (connectKey.wasPressed()) {
                 String url = CFMCConfig.get().defaultServerAddress;
                 client.setScreen(new CFMCAuthScreen(url));
                 CFMCReconnectHandler.getInstance().remember(url);
             }
+            CFMCWorldInjector.drain(client); // 灌入积压的服务器区块 (每 tick ≤4 个)
             onClientTick(client);
         });
 

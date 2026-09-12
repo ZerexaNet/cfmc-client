@@ -1,6 +1,8 @@
 package com.cfmc.common.protocol.packets.clientbound;
 
 import com.cfmc.common.network.CFMCNetworkManager;
+import com.cfmc.common.platform.CFMCWorldBridge;
+import com.cfmc.common.platform.CFMCWorldBridgeHolder;
 import com.cfmc.common.protocol.CFMCPacket;
 import com.cfmc.common.protocol.PacketReader;
 import com.cfmc.common.protocol.PacketWriter;
@@ -36,7 +38,9 @@ public class JoinGamePacket extends CFMCPacket {
 
     @Override
     public void handle() {
-        // TODO(Phase 2): 触发进入世界流程 (设置玩家实体ID/出生点/游戏模式)
         CFMCNetworkManager.getInstance().onJoinGame(this);
+        // [Phase 2] 灌入客户端世界: 传送到服务端恢复位置/出生点 (loader 层实现)
+        CFMCWorldBridge wb = CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onJoinGame(entityId, gamemode, spawnX, spawnY, spawnZ);
     }
 }

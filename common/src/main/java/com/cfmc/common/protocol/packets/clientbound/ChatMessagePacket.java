@@ -1,5 +1,7 @@
 package com.cfmc.common.protocol.packets.clientbound;
 
+import com.cfmc.common.platform.CFMCWorldBridge;
+import com.cfmc.common.platform.CFMCWorldBridgeHolder;
 import com.cfmc.common.util.CFMCConstants;
 import com.cfmc.common.protocol.CFMCPacket;
 import com.cfmc.common.protocol.PacketReader;
@@ -26,7 +28,9 @@ public class ChatMessagePacket extends CFMCPacket {
 
     @Override
     public void handle() {
-        // 在客户端聊天 HUD 显示 (Phase 2: MinecraftClient.inGameHud.getChatHud().addMessage)
         com.cfmc.common.util.CFMCLogger.info("[聊天] " + message);
+        // [Phase 2] 在客户端聊天 HUD 显示 (loader 层实现)
+        CFMCWorldBridge wb = CFMCWorldBridgeHolder.get();
+        if (wb != null) wb.onChatMessage(message);
     }
 }

@@ -104,7 +104,8 @@ cfmc-client/
 ├── fabric/                 # Fabric 适配层（yarn 映射）
 │   └── src/main/java/com/cfmc/fabric/
 │       ├── CFMCFabricClient.java    # 入口: 平台注入最早执行
-│       ├── mixin/          # ClientConnection/MinecraftClient/PlayNetworkHandler
+│       ├── mixin/          # MinecraftClient/PlayNetworkHandler
+│       ├── world/          # ★ CFMCWorldInjector — 服务端地形灌入客户端世界 (Phase 2)
 │       ├── render/         # HUD 覆盖层/断线界面
 │       └── screen/         # 认证连接界面
 ├── neoforge/               # NeoForge 适配层（Mojang 官方映射, ModDevGradle）
@@ -120,9 +121,17 @@ cfmc-client/
 ## 使用方法
 
 1. 下载对应版本组合的 jar（如 Fabric 1.21.4 → `cfmc-client-fabric-1.21.4-*.jar`），连同其依赖要求放入 `mods/`
-2. 启动游戏，按 **P** 打开连接界面
-3. 填入服务端地址（`ws://` 或 `wss://`）连接；认证模式支持 `online`（正版）/ `offline` / `skin_server`（外置皮肤站）/ `hybrid`
-4. 配置文件：`.minecraft/config/cfmc-client.properties`
+2. **先进入任意一个世界**（单机存档即可 — CFMC 走"覆盖层"模式，服务端地形会灌进当前世界）
+3. 按 **P** 打开 CFMC 登录界面，输入用户名/密码（离线模式密码可留空）后点"连接"
+4. 连接成功后会自动传送到服务端位置，服务器地形/方块在数秒内覆盖本地地形（HUD 左上角显示 `已同步 N 区块`）
+5. 服务器地址在配置文件里设置（**不在登录界面**）：`.minecraft/config/cfmc-client.properties` 的 `serverAddress=wss://你的域名`
+   - 认证模式同文件 `authMode`：`online`（正版）/ `offline` / `skin_server`（外置皮肤站）/ `hybrid`
+
+### 覆盖层模式须知
+
+- 连接期间原版区块流被拦截（防双数据源打架），**你的本地存档不会被修改**——注入的方块是客户端侧的，断开 CFMC 后原版地形自动恢复
+- 挖掘/放置方块目前只影响本地世界（与 CFMC 服务端的交互同步在后续阶段提供）
+- 其他玩家的移动实体暂不渲染（聊天可见进出提示），本地原版生物仍会显示，属于已知边界
 
 ## 全版本支持的已知边界
 
