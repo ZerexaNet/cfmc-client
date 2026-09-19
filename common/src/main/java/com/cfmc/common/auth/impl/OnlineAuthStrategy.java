@@ -14,69 +14,92 @@ import java.time.Duration;
 
 /**
  * ============================================================================
- * 正版认证 — 与 Mojang sessionserver 校验玩家会话
+ * 正版认证 — 通过服务端 /auth/login + Mojang sessionserver 校验
  * ============================================================================
  *
- * 流程适配 (与服务端 mojang-api.js 对齐):
- *   原版: 客户端 join(serverId) → 服务端 hasJoined(username, serverId)
- *   本项目: 客户端把 Minecraft 会话的 serverId 约定值直接传给服务端
- *   login 接口 (body.serverId), 服务端回查 hasJoined。
+ * 流程:
+ *   1. 客户端从 Minecraft 会话获取 UUID + 玩家名
+ *   2. POST {server}/auth/login { username, mode: "online" }
+ *   3. 服务端调 Mojang hasJoined 校验 → 签发 JWT
+ *   4. 返回 accessToken + profile
  *
- * v0.1 简化: 客户端只负责采集"会话可用性" (UUID+名), 服务端 hybrid
- *   模式收到 serverId 后自行验证 — 真正的 join/hasJoined 全流程 Phase 3。
- *
- * TODO(Phase 3): POST sessionserver join 端点 + 服务端随机 serverId 生成。
+ * v0.1 简化: 服务端 online 模式需要 client 先在 Mojang 执行 join,
+ * 然后传 serverId 给服务端验证。当前先走服务端 hybrid 兜底 (离线)。
  */
 public class OnlineAuthStrategy implements CFMCAuthService {
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
-    private final Gson gson = new Gson();
+    private static final Gson GSON = new Gson();
 
-    /** 当前 Minecraft 会话的玩家名 (由 CFMCClientMod 注入) */
     private final String sessionName;
-    /** 当前会话 UUID (带横杠) */
-    private final String sessionUuid;
 
-    public OnlineAuthStrategy(String sessionName, String sessionUuid) {
+    public OnlineAuthStrategy(String sessionName) {
         this.sessionName = sessionName;
-        this.sessionUuid = sessionUuid;
     }
 
     @Override
-    public AuthResult authenticate(String username, String password) throws AuthException {
-        // 校验: 请求的名字必须与当前正版会话一致 (不能冒用他人名字)
-        if (sessionName == null || sessionUuid == null) {
+    public AuthResult authenticate(String username, String password, String serverUrl) throws AuthException {
+        if (sessionName == null) {
             throw new AuthException("未检测到正版会话, 请先启动正版登录");
         }
         if (!sessionName.equalsIgnoreCase(username)) {
             throw new AuthException("正版会话 (" + sessionName + ") 与输入名不匹配");
         }
 
-        // v0.1: serverId 用固定占位 — 服务端 hasJoined 会失败并降级 (hybrid 语义)
-        // TODO(Phase 3): 实现 join → hasJoined 全流程后移除本注释
-        CFMCLogger.info("正版认证: " + sessionName + " (" + sessionUuid + ")");
-        return new AuthResult(
-                sessionUuid.replace("-", ""),
-                sessionName,
-                null, // TODO: 服务端签发的 JWT 在 login 响应里, v0.1 走匿名握手
-                "online"
-        );
+        String httpUrl = toHttpUrl(serverUrl);
+        CFMCLogger.info("正版认证: " + sessionName + " → " + httpUrl + "/auth/login");
+
+        try {
+            JsonObject body = new JsonObject();
+            body.addProperty("username", username);
+            body.addProperty("mode", "online");
+            // TODO(Phase 3): 传 serverId 给服务端做 hasJoined 验证
+            // body.addProperty("serverId", serverId);
+
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(httpUrl + "/auth/login"))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
+                    .build();
+
+            HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+
+            if (resp.statusCode() != 200) {
+                JsonObject err = GSON.fromJson(resp.body(), JsonObject.class);
+                String msg = err.has("message") ? err.get("message").getAsString() : "HTTP " + resp.statusCode();
+                throw new AuthException("认证失败: " + msg);
+            }
+
+            JsonObject data = GSON.fromJson(resp.body(), JsonObject.class);
+            if (!data.has("ok") || !data.get("ok").getAsBoolean()) {
+                throw new AuthException("认证失败: " + data.get("message").getAsString());
+            }
+
+            String accessToken = data.get("accessToken").getAsString();
+            JsonObject profile = data.getAsJsonObject("profile");
+            String uuid = profile.get("uuid").getAsString();
+            String name = profile.get("name").getAsString();
+            String mode = profile.has("mode") ? profile.get("mode").getAsString() : "online";
+
+            CFMCLogger.info("正版认证成功: " + name + " (" + uuid + ", mode=" + mode + ")");
+            return new AuthResult(uuid, name, accessToken, mode);
+
+        } catch (AuthException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuthException("无法连接认证服务器: " + e.getMessage(), e);
+        }
     }
 
-    /** 探测 Mojang sessionserver 可达性 (调试用) */
-    @SuppressWarnings("unused")
-    private boolean isSessionServerReachable() {
-        try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://sessionserver.mojang.com/"))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET().build();
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-            return resp.statusCode() > 0;
-        } catch (Exception e) {
-            return false;
-        }
+    private static String toHttpUrl(String wsUrl) {
+        if (wsUrl == null) throw new IllegalArgumentException("服务器地址为空");
+        String url = wsUrl.replaceAll("/+$", "");
+        if (url.startsWith("wss://")) return "https://" + url.substring(6);
+        if (url.startsWith("ws://")) return "http://" + url.substring(5);
+        if (url.startsWith("https://") || url.startsWith("http://")) return url;
+        return "http://" + url;
     }
 }

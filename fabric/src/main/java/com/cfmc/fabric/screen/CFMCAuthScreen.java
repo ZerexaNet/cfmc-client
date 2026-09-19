@@ -5,6 +5,7 @@ import com.cfmc.common.auth.CFMCAuthService;
 import com.cfmc.common.auth.AuthResult;
 import com.cfmc.common.auth.impl.HybridAuthStrategy;
 import com.cfmc.common.auth.impl.OfflineAuthStrategy;
+import com.cfmc.common.auth.impl.OnlineAuthStrategy;
 import com.cfmc.common.auth.impl.SkinServerAuthStrategy;
 import com.cfmc.common.network.CFMCNetworkManager;
 import net.minecraft.client.gui.DrawContext;
@@ -17,9 +18,11 @@ import net.minecraft.text.Text;
  * ============================================================================
  * CFMC 登录界面 — 用户名/密码输入 + 认证模式选择 + 连接
  * ============================================================================
- * 认证模式由 CFMCConfig.authMode 决定 (配置文件修改):
- *   online / offline / skin_server / hybrid
- * v0.1 简化: 界面提供 用户名 + 密码 + 连接按钮; 模式切换走配置文件。
+ * 认证流程:
+ *   1. 用户输入用户名/密码
+ *   2. 按 authMode 配置选择策略
+ *   3. 策略调服务端 /auth/login 获取 JWT
+ *   4. 用 JWT 建立 WebSocket 连接
  */
 public class CFMCAuthScreen extends Screen {
 
@@ -69,7 +72,8 @@ public class CFMCAuthScreen extends Screen {
         new Thread(() -> {
             try {
                 CFMCAuthService service = createStrategy();
-                AuthResult result = service.authenticate(username, password);
+                // 关键修复: 传入 serverUrl, 策略通过 /auth/login 获取 JWT
+                AuthResult result = service.authenticate(username, password, serverUrl);
 
                 // 回主线程: 建 WS 连接 + 关闭界面
                 net.minecraft.client.MinecraftClient.getInstance().execute(() -> {
@@ -89,10 +93,10 @@ public class CFMCAuthScreen extends Screen {
     private CFMCAuthService createStrategy() {
         return switch (CFMCConfig.get().authMode) {
             case "offline" -> new OfflineAuthStrategy();
-            case "skin_server" -> new SkinServerAuthStrategy(null);
-            case "online" -> new com.cfmc.common.auth.impl.OnlineAuthStrategy(
-                    net.minecraft.client.MinecraftClient.getInstance().getSession().getUsername(), null);
-            default -> new HybridAuthStrategy(null, new SkinServerAuthStrategy(null));
+            case "skin_server" -> new SkinServerAuthStrategy();
+            case "online" -> new OnlineAuthStrategy(
+                    net.minecraft.client.MinecraftClient.getInstance().getSession().getUsername());
+            default -> new HybridAuthStrategy();
         };
     }
 

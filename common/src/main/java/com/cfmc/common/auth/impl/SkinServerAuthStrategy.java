@@ -3,7 +3,6 @@ package com.cfmc.common.auth.impl;
 import com.cfmc.common.auth.AuthResult;
 import com.cfmc.common.auth.CFMCAuthService;
 import com.cfmc.common.util.CFMCLogger;
-import com.cfmc.common.config.CFMCConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -15,80 +14,82 @@ import java.time.Duration;
 
 /**
  * ============================================================================
- * 皮肤站认证 — Yggdrasil /authenticate (ely.by / littleskin.cn / 自建)
+ * 皮肤站认证 — 通过服务端 /auth/login 代理 Yggdrasil 认证
  * ============================================================================
  *
- * 端点: POST {base}/api/authserver/authenticate
- * 请求: { agent:{name:"Minecraft",version:1}, username, password, clientToken }
- * 响应: { accessToken, clientToken, selectedProfile: { id, name } }
+ * 流程:
+ *   1. POST {server}/auth/login { username, password, mode: "skin_server" }
+ *   2. 服务端调皮肤站 Yggdrasil authenticate → 签发 JWT
+ *   3. 返回 accessToken + profile (含皮肤)
  *
- * ⚠️ 服务端拿到的是"服务端视角"的皮肤站会话; v0.1 信任皮肤站返回的
- *    profile (uuid/name), 服务端 skin_server 模式会再次调皮肤站核验 (Phase 3)。
+ * v0.1 前客户端直接调皮肤站; 现在统一走服务端代理, 保证 UUID 和 JWT 一致性。
  */
 public class SkinServerAuthStrategy implements CFMCAuthService {
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
-    private final Gson gson = new Gson();
-
-    private final String baseUrl;
-    private final String clientToken = java.util.UUID.randomUUID().toString();
-
-    public SkinServerAuthStrategy(String baseUrl) {
-        this.baseUrl = baseUrl == null ? CFMCConfig.get().skinServerUrl
-                : baseUrl.replaceAll("/+$", "");
-    }
+    private static final Gson GSON = new Gson();
 
     @Override
-    public AuthResult authenticate(String username, String password) throws AuthException {
+    public AuthResult authenticate(String username, String password, String serverUrl) throws AuthException {
         if (password == null || password.isBlank()) {
             throw new AuthException("皮肤站认证需要密码");
         }
 
+        String httpUrl = toHttpUrl(serverUrl);
+        CFMCLogger.info("皮肤站认证: " + username + " → " + httpUrl + "/auth/login");
+
         try {
             JsonObject body = new JsonObject();
-            JsonObject agent = new JsonObject();
-            agent.addProperty("name", "Minecraft");
-            agent.addProperty("version", 1);
-            body.add("agent", agent);
             body.addProperty("username", username);
             body.addProperty("password", password);
-            body.addProperty("clientToken", clientToken);
+            body.addProperty("mode", "skin_server");
 
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/api/authserver/authenticate"))
+                    .uri(URI.create(httpUrl + "/auth/login"))
                     .header("Content-Type", "application/json")
                     .timeout(Duration.ofSeconds(10))
-                    .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(body)))
+                    .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)))
                     .build();
 
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
 
-            if (resp.statusCode() == 403) {
+            if (resp.statusCode() == 401) {
                 throw new AuthException("皮肤站账号或密码错误");
             }
             if (resp.statusCode() != 200) {
-                throw new AuthException("皮肤站错误 (HTTP " + resp.statusCode() + ")");
+                JsonObject err = GSON.fromJson(resp.body(), JsonObject.class);
+                String msg = err.has("message") ? err.get("message").getAsString() : "HTTP " + resp.statusCode();
+                throw new AuthException("认证失败: " + msg);
             }
 
-            JsonObject data = gson.fromJson(resp.body(), JsonObject.class);
-            if (!data.has("selectedProfile")) {
-                throw new AuthException("皮肤站账号没有角色档案");
+            JsonObject data = GSON.fromJson(resp.body(), JsonObject.class);
+            if (!data.has("ok") || !data.get("ok").getAsBoolean()) {
+                throw new AuthException("认证失败: " + data.get("message").getAsString());
             }
-            JsonObject profile = data.getAsJsonObject("selectedProfile");
 
-            CFMCLogger.info("皮肤站认证成功: " + profile.get("name").getAsString());
-            return new AuthResult(
-                    profile.get("id").getAsString(),       // 皮肤站 UUID (无横杠)
-                    profile.get("name").getAsString(),
-                    data.get("accessToken").getAsString(), // 皮肤站 Token (供服务端核验)
-                    "skin_server"
-            );
+            String accessToken = data.get("accessToken").getAsString();
+            JsonObject profile = data.getAsJsonObject("profile");
+            String uuid = profile.get("uuid").getAsString();
+            String name = profile.get("name").getAsString();
+
+            CFMCLogger.info("皮肤站认证成功: " + name + " (" + uuid + ")");
+            return new AuthResult(uuid, name, accessToken, "skin_server");
+
         } catch (AuthException e) {
             throw e;
         } catch (Exception e) {
-            throw new AuthException("皮肤站不可达: " + baseUrl, e);
+            throw new AuthException("无法连接认证服务器: " + e.getMessage(), e);
         }
+    }
+
+    private static String toHttpUrl(String wsUrl) {
+        if (wsUrl == null) throw new IllegalArgumentException("服务器地址为空");
+        String url = wsUrl.replaceAll("/+$", "");
+        if (url.startsWith("wss://")) return "https://" + url.substring(6);
+        if (url.startsWith("ws://")) return "http://" + url.substring(5);
+        if (url.startsWith("https://") || url.startsWith("http://")) return url;
+        return "http://" + url;
     }
 }
